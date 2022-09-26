@@ -17,12 +17,13 @@ type TCPServer struct {
 	listener      *net.TCPListener
 	Host          string // Ex: "127.0.0.1"
 	Port          string // Ex: "8080"
-	ClientHandler func(TCPRequest) TCPResponse
+	ClientHandler func(TCPRequest) (TCPResponse, bool)
 }
 
 type TCPRequest struct {
 	Request []byte
 	Size    int
+	Connection net.Conn
 }
 
 type TCPResponse struct {
@@ -70,11 +71,13 @@ func (server *TCPServer) handleClient(conn net.Conn) {
 		e.HandleFatalError(err)
 	}
 
-	tcpResponse := server.ClientHandler(tcpRequest)
+	tcpResponse, isClose := server.ClientHandler(tcpRequest)
 
 	err = HandlerWriteBack(conn, tcpResponse)
 	e.LogError(err)
 	e.HandleFatalError(err)
 
-	HandlerCloseClient(conn)
+	if isClose {
+		HandlerCloseClient(conn)
+	}
 }

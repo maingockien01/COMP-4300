@@ -15,6 +15,10 @@ func HandlerCloseClient(conn net.Conn) {
 
 func HandlerWriteBack(conn net.Conn, tcpResponse TCPResponse) error {
 	//TODO: check if conn is open before write ??? do I need to check
+	if tcpResponse.Response == nil {
+		return nil
+	}
+
 	_, err := conn.Write(tcpResponse.Response)
 
 	e.LogError(err)
@@ -54,6 +58,7 @@ func HandlerReadBuffer(conn net.Conn) (TCPRequest, error) {
 	tcpRequest := TCPRequest{
 		Request: request,
 		Size:    requestSize,
+		Connection: conn,
 	}
 
 	fmt.Println(requestSize)

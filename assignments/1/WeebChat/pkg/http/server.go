@@ -14,7 +14,7 @@ type HttpServer struct {
 func (server *HttpServer) Setup() error {
 
 	if server.Host == "" || server.Port == "" {
-		return MissingRequiredField{}
+		return tcp.MissingRequiredField{}
 	}
 
 	server.tcpServer = tcp.TCPServer{
@@ -37,15 +37,17 @@ func (server *HttpServer) Stop() {
 	server.tcpServer.Stop()
 }
 
-func (server *HttpServer) handlers(tcpReq tcp.TCPRequest) (tcpRes tcp.TCPResponse) {
+func (server *HttpServer) handlers(tcpReq tcp.TCPRequest) (tcpRes tcp.TCPResponse, isClose bool) {
 	//TODO: to be orgainized
+	isClose = true
+
 	req, err := parseHttpRequest(tcpReq.Request)
 
 	if err != nil {
 		res := handleParsingHttpError(req, err)
 		tcpRes = parseTcpResponse(res)
 
-		return tcpRes
+		return
 	}
 
 	res := initHttpResponse(req)
@@ -53,14 +55,14 @@ func (server *HttpServer) handlers(tcpReq tcp.TCPRequest) (tcpRes tcp.TCPRespons
 	if err != nil {
 		_, res := handleInternalError(req, res)
 		tcpRes = parseTcpResponse(res)
-		return tcpRes
+		return
 	}
 
 	//Abstract: webserver/application layer will in charge of this
 	if server.Handler == nil {
 		_, res := handleInternalError(req, res)
 		tcpRes = parseTcpResponse(res)
-		return tcpRes
+		return
 	}
 
 	res, err = server.Handler(req, res)
@@ -68,9 +70,9 @@ func (server *HttpServer) handlers(tcpReq tcp.TCPRequest) (tcpRes tcp.TCPRespons
 	if err != nil {
 		_, res := handleInternalError(req, res)
 		tcpRes = parseTcpResponse(res)
-		return tcpRes
+		return
 	}
 
 	tcpRes = parseTcpResponse(res)
-	return tcpRes
+	return tcpRes, true //always close connection after handling request (handle keep alive case later, if needed)
 }
