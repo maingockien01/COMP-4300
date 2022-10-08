@@ -19,10 +19,8 @@ func (e WrongSecretError) Error() string {
 	return "Wrong secret"
 }
 
-func (r *Room) AddUser(user *User, secret *string) error {
-	if r.secret != nil && *(r.secret) != *secret {
-		return WrongSecretError{}
-	}
+func (r *Room) AddUser(user *User) error {
+
 	user.LastActiveAt = time.Now()
 	r.Users = append(r.Users, user)
 
@@ -40,7 +38,7 @@ func (r *Room) RemoveUser(user *User) {
 func (r *Room) AppendMessage(sender *User, message *Message) {
 	r.Lock.Lock()
 	defer r.Lock.Unlock()
-	message.From = sender.Id
+	message.Sender = sender.Id
 	r.Messages = append(r.Messages, message)
 	sender.LastActiveAt = time.Now()
 }

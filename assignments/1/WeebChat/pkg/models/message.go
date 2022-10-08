@@ -5,10 +5,11 @@ import (
 )
 
 type Message struct {
-	Sender  string
-	Content string
-	From    string
-	TimeAt  time.Time
+	Sender   string
+	Content  string
+	Room     string
+	TimeAt   time.Time
+	Position int
 }
 
 func NewMessage(sender string, content string) *Message {
