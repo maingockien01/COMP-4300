@@ -6,7 +6,10 @@ import (
 	"WeebChat/pkg/tcp"
 	"WeebChat/pkg/websocket"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -45,11 +48,21 @@ func (s *ChatServiceServer) Setup() error {
 	router := http.NewServeMux()
 
 	//Add handlers
-	router.Handle("/echo/{id}", http.HandlerFunc(s.HandlerEcho))
+	router.Handle("/echo", http.HandlerFunc(s.HandlerEcho))
 	router.Handle("/chat", http.HandlerFunc(HandlerWrapper(s.HandlerFrame)))
 	server.Handler = router
 
 	s.Server = server
+
+	s.ChatService.Rooms = append(s.ChatService.Rooms, &models.Room{
+		Messages: make([]*models.Message, 0),
+		Name:     "HelloWorld",
+		Users:    make([]*models.User, 0),
+		Lock:     sync.Mutex{},
+	})
+
+	s.ChatService.Rooms[0].AppendMessage(&models.User{Id: "00", Name: "default", Ws: nil, LastActiveAt: time.Now()}, models.NewMessage("00", "Hello World"))
+
 	return nil
 }
 
@@ -76,27 +89,62 @@ func HandlerWrapper(handlerFrame func(websocket.Frame, *websocket.ServerWebSocke
 }
 
 func (s *ChatServiceServer) HandlerFrame(frame websocket.Frame, ws *websocket.ServerWebSocket) error {
+	fmt.Println("Handling frame...")
 	payload := frame.ParseText()
-	var protocolMetada protocols.ProtocolMetadata
+	var protocolMetada protocols.Protocol
 	err := json.Unmarshal([]byte(payload), &protocolMetada)
+
+	fmt.Println(protocolMetada)
 
 	if err != nil {
 		return err
 	}
 
-	switch protocolMetada.Type {
+	fmt.Println("Handling ", protocolMetada.Metadata.Type, " ...")
+	switch protocolMetada.Metadata.Type {
 	case protocols.TYPE_MESSAGE:
-		var protocolMessage protocols.ProtocolMessage
-		err := json.Unmarshal([]byte(payload), &protocolMessage)
-
-		if err != nil {
-			return err
-		}
-		return nil
+		return s.HandleMessage(payload, frame, ws)
 	case protocols.TYPE_ROOM:
 		return s.HandleRoom(payload, frame, ws)
 	case protocols.TYPE_USER:
 		return s.HandleUser(payload, frame, ws)
+	default:
+		fmt.Println("Found no match type handler")
+		return errors.New("Errors on unexpected type handler")
+	}
+
+}
+
+func (s *ChatServiceServer) PushMessage(ws *websocket.ServerWebSocket, messages ...*models.Message) error {
+	if ws == nil {
+		return errors.New("There is no socket")
+	}
+	protocolMessagePush := protocols.ProtocolMessage{
+		Metadata: protocols.ProtocolMetadata{
+			Version:   protocols.V1,
+			From:      s.ChatService.Name,
+			Direction: protocols.DIRECTION_PUSH,
+			Type:      protocols.TYPE_MESSAGE,
+		},
+		Data: messages,
+	}
+
+	jsonPayload, err := json.Marshal(protocolMessagePush)
+	if err != nil {
+		fmt.Println("Error on jsonifying message for pushing message ", err)
+		return err
+	}
+
+	frame := websocket.NewFrameMessage(jsonPayload)
+
+	fmt.Println("---")
+	fmt.Println(*frame)
+
+	err = ws.Send(*frame)
+
+	if err != nil {
+		fmt.Println("Error on pushing message into socket ", err)
+		return err
 	}
 
 	return nil

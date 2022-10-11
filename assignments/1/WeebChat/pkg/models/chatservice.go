@@ -22,13 +22,29 @@ func NewChatService(name string) *ChatService {
 	}
 }
 
-func (c *ChatService) CreateRoom(name string) {
+func (c *ChatService) CreateRoom(name string) error {
 	//Create a new room
 	//Add room to rooms list
+	room := c.GetRoom(name)
+
+	if room != nil {
+		return errors.New("Duplicate room name")
+	}
+
+	newRoom := NewRoom(name)
+	c.Rooms = append(c.Rooms, newRoom)
+
+	return nil
 }
 
 func (c *ChatService) DeleteRoom(name string) {
 	//Delete room from rooms list
+	for i, r := range c.Rooms {
+		if r.Name == name {
+			c.Rooms = append(c.Rooms[:i], c.Rooms[i+1:]...)
+		}
+	}
+
 }
 
 func (c *ChatService) GetRoom(name string) *Room {
@@ -42,13 +58,19 @@ func (c *ChatService) GetRoom(name string) *Room {
 	return nil
 }
 
-func (c *ChatService) GetRooms() {
+func (c *ChatService) GetRooms() []*Room {
 	//Return rooms list
+	return c.Rooms
 }
 
 func (c *ChatService) AddUser(user *User) {
 	for _, u := range c.Users {
 		if u.Id == user.Id {
+
+			if u.Ws == nil {
+				u.Ws = user.Ws
+			}
+
 			return
 		}
 	}

@@ -1,14 +1,14 @@
 package protocols
 
 type ProtocolMetadata struct {
-	Version   int
-	From      string
-	Direction string
-	Type      string
+	Version   int    `json:"version"`
+	From      string `json:"from"`
+	Direction string `json:"direction"`
+	Type      string `json:"type"`
 }
 
 type Protocol struct {
-	Metadata ProtocolMetadata
+	Metadata ProtocolMetadata `json:"metadata"`
 }
 
 const (
@@ -22,6 +22,7 @@ const (
 	DIRECTION_PUSH     = "push"
 	DIRECTION_JOIN     = "join"
 	DIRECTION_GREETING = "greeting"
+	DIRECTION_UPDATE   = "update"
 )
 
 const (

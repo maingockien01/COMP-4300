@@ -3,6 +3,6 @@ package protocols
 import "WeebChat/pkg/models"
 
 type ProtocolUser struct {
-	Metadata ProtocolMetadata
-	Data     models.User
+	Metadata ProtocolMetadata `json:"metadata"`
+	Data     models.User      `json:"data"`
 }

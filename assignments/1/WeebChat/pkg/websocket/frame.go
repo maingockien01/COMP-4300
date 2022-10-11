@@ -52,18 +52,22 @@ type Frame struct {
 }
 
 func NewFramePong() (f *Frame) {
+	f = &Frame{}
 	f.Opcode = MESSAGE_PONG
 	return f
 }
 
 func NewFramePing() (f *Frame) {
+	f = &Frame{}
 	f.Opcode = MESSAGE_PING
 	return f
 }
 
 func NewFrameMessage(message []byte) (f *Frame) {
+	f = &Frame{}
 	f.Opcode = MESSAGE_TEXT
 	f.Payload = message
+	f.Length = uint64(len(message))
 
 	return f
 }
