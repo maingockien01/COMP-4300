@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -63,21 +64,30 @@ func (c *ChatService) GetRooms() []*Room {
 	return c.Rooms
 }
 
-func (c *ChatService) AddUser(user *User) {
-	for _, u := range c.Users {
+func (c *ChatService) AddUser(user *User) error {
+	for i := 0; i < len(c.Users); i++ {
+		u := c.Users[i]
 		if u.Id == user.Id {
 
 			if u.Ws == nil {
+				if user.Ws == nil {
+					return errors.New("Duplicate user id")
+				}
+
+				// Update websocket conn
+				fmt.Println("Update socket")
 				u.Ws = user.Ws
 			}
 
-			return
+			return nil
 		}
 	}
 
 	user.LastActiveAt = time.Now()
 
 	c.Users = append(c.Users, user)
+
+	return nil
 }
 
 func (c *ChatService) GetUser(userId string) *User {
@@ -103,8 +113,8 @@ func (c *ChatService) JoinUser(userId string, roomName string) error {
 		return errors.New("Found no room")
 	}
 
-	room.AddUser(user)
+	err := room.AddUser(user)
 
-	return nil
+	return err
 
 }

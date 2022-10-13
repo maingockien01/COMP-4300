@@ -5,11 +5,11 @@ import (
 )
 
 type Message struct {
-	Sender   string
-	Content  string
-	Room     string
-	TimeAt   time.Time
-	Position int
+	Sender   string    `json:"sender"`
+	Content  string    `json:"content"`
+	Room     string    `json:"room"`
+	TimeAt   time.Time `json:"timeAt"`
+	Position int       `json:"position"`
 }
 
 func NewMessage(sender string, content string) *Message {

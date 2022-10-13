@@ -1,11 +1,13 @@
 package server
 
 import (
+	"WeebChat/pkg/models"
 	"WeebChat/pkg/services/protocols"
 	"WeebChat/pkg/websocket"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 )
 
 func (s *ChatServiceServer) HandleRoom(payload string, frame websocket.Frame, ws *websocket.ServerWebSocket) error {
@@ -50,4 +52,62 @@ func (s *ChatServiceServer) HandleRoom(payload string, frame websocket.Frame, ws
 	}
 
 	return nil
+}
+
+func (s *ChatServiceServer) HandlerGetRooms(w http.ResponseWriter, r *http.Request) {
+	rooms := s.ChatService.GetRooms()
+
+	ReturnRestResponse(w, rooms, http.StatusOK)
+}
+
+func (s *ChatServiceServer) HandlerRoom(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+
+		var room models.Room
+
+		err := json.NewDecoder(r.Body).Decode(&room)
+
+		if err != nil {
+			fmt.Println("Error on handle room: Decode request body ", err)
+			ReturnRestResponse(w, INTERNAL_ERROR, http.StatusInternalServerError)
+			return
+		}
+
+		if room.Name == "" {
+			ReturnRestResponse(w, models.ErrorResponse{
+				Message: "Invalid body",
+				Code:    http.StatusBadRequest,
+			}, http.StatusBadRequest)
+			return
+		}
+
+		err = s.ChatService.CreateRoom(room.Name)
+
+		if err != nil {
+			ReturnRestResponse(w, models.ErrorResponse{
+				Message: "Duplicate room name",
+				Code:    http.StatusBadRequest,
+			}, http.StatusBadRequest)
+			return
+		}
+
+		newRoom := s.ChatService.GetRoom(room.Name)
+
+		ReturnRestResponse(w, newRoom, http.StatusOK)
+
+		return
+	default:
+		res := models.ErrorResponse{
+			Message: "Not found",
+			Code:    http.StatusNotFound,
+		}
+
+		ReturnRestResponse(w, res, http.StatusNotFound)
+		return
+	}
+}
+
+func (s *ChatServiceServer) HandlerRoomUser(w http.ResponseWriter, r *http.Request) {
+
 }

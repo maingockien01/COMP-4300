@@ -6,9 +6,9 @@ import (
 )
 
 type User struct {
-	Id           string //like public id -> hash of secret
-	Name         string //name
-	Secret       string //like password
-	Ws           *websocket.ServerWebSocket
-	LastActiveAt time.Time
+	Id           string                     `json:"id"`   //like public id -> hash of secret
+	Name         string                     `json:"name"` //name
+	Secret       string                     `json:"-"`    //like password
+	Ws           *websocket.ServerWebSocket `json:"-"`
+	LastActiveAt time.Time                  `json:"lastActiveAt"`
 }

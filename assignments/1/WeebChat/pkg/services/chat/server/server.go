@@ -50,6 +50,12 @@ func (s *ChatServiceServer) Setup() error {
 	//Add handlers
 	router.Handle("/echo", http.HandlerFunc(s.HandlerEcho))
 	router.Handle("/chat", http.HandlerFunc(HandlerWrapper(s.HandlerFrame)))
+	router.Handle("/rooms", http.HandlerFunc(s.HandlerGetRooms))
+	router.Handle("/users/room/", http.HandlerFunc(s.HandleGetUserIn))
+	router.Handle("/user", http.HandlerFunc(s.HandleAddUser))
+	router.Handle("/room", http.HandlerFunc(s.HandlerRoom))
+	router.Handle("/messages/", http.HandlerFunc(s.HandleMessageRestful))
+
 	server.Handler = router
 
 	s.Server = server
@@ -59,6 +65,8 @@ func (s *ChatServiceServer) Setup() error {
 		Name:     "HelloWorld",
 		Users:    make([]*models.User, 0),
 		Lock:     sync.Mutex{},
+		Capacity: 0,
+		Limit:    10,
 	})
 
 	s.ChatService.Rooms[0].AppendMessage(&models.User{Id: "00", Name: "default", Ws: nil, LastActiveAt: time.Now()}, models.NewMessage("00", "Hello World"))

@@ -1,22 +1,27 @@
 package models
 
 import (
+	"errors"
 	"math"
 	"sync"
 	"time"
 )
 
 type Room struct {
-	Messages []*Message
-	Name     string
-	secret   *string
-	Users    []*User
-	Lock     sync.Mutex
+	Messages []*Message `json:"-"`
+	Name     string     `json:"name"`
+	secret   *string    `json:"-"`
+	Users    []*User    `json:"-"`
+	Lock     sync.Mutex `json:"-"`
+	Capacity int        `json:"capacity"`
+	Limit    int        `json:"limit"`
 }
 
 type WrongSecretError struct{}
 
 const NUM_LATEST_MESSAGE = 10
+
+const DEFAULT_ROOM_LIMIT = 5
 
 func (e WrongSecretError) Error() string {
 	return "Wrong secret"
@@ -24,21 +29,50 @@ func (e WrongSecretError) Error() string {
 
 func (r *Room) AddUser(user *User) error {
 
+	if r.Capacity >= r.Limit {
+		return errors.New("Capacity limited")
+	}
+
+	if r.IsUserIn(user.Id) {
+		return errors.New("User already in the room")
+	}
+
 	user.LastActiveAt = time.Now()
 	r.Users = append(r.Users, user)
+
+	r.Capacity = len(r.Users)
 
 	return nil
 }
 
-func (r *Room) RemoveUser(user *User) {
+func (r *Room) RemoveUser(user *User) error {
 	for i, u := range r.Users {
 		if u.Id == user.Id {
 			r.Users = append(r.Users[:i], r.Users[i+1:]...)
+			r.Capacity = len(r.Users)
+
+			return nil
 		}
 	}
+
+	return errors.New("No users found")
+}
+
+func (r *Room) IsUserIn(userId string) bool {
+	for _, user := range r.Users {
+		if user.Id == userId {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *Room) AppendMessage(sender *User, message *Message) *Message {
+
+	if !r.IsUserIn(sender.Id) {
+		return nil
+	}
+
 	r.Lock.Lock()
 	defer r.Lock.Unlock()
 	message.Sender = sender.Id
@@ -74,9 +108,21 @@ func (r *Room) GetUsers() []*User {
 	return r.Users
 }
 
+func (r *Room) GetUser(userId string) *User {
+	for _, user := range r.Users {
+		if user.Id == userId {
+			return user
+		}
+	}
+	return nil
+}
+
 func NewRoom(name string) *Room {
 	room := Room{
-		Name: name,
+		Name:     name,
+		Capacity: 0,
+		Limit:    DEFAULT_ROOM_LIMIT,
+		Lock:     sync.Mutex{},
 	}
 
 	return &room
