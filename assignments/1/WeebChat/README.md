@@ -1,9 +1,30 @@
+# File
+
+- `Assignment 1 - Report.pdf` Report/Screenshots of my assignment
+- `COMP4300-A1.postman_collection.json` Postman collection for testing Rest API
+- `Dockerfile.server` Dockerfile for creating images of server. 
+- Folder `cmd` contain entry points
+- Folder `bin` (after run make) contain executable files.
+- Folder `pkf`:
+        - `client` chat client
+        - `models` program domain models
+        - `services`
+                - `chat/server` chat server
+                - `protocol` websocket protocols
+        - `websocket` package for websocket
 # Run
 
 ## Chat Server
 ```
 $ make buildChatService
 $ HOST=localhost PORT=8010 SERVER_NAME=chat1 bin/chatService
+```
+
+### With docker
+If you have docker and want to run the server with Docker. Recommend to run normally without docker for the sake of simplicity.
+```
+$ docker build -f Dockerfile.server -t "discovery_service:Dockerfile.server" .
+$ docker run --publish 8010:8080 --network=host  server:Dockerfile.server 
 ```
 
 ## Chat client
@@ -102,6 +123,7 @@ Used to register new user with server or register websocket for that user so cli
 - the USER_ID is like "email" used to register account with server. Client would register automatically when it starts up. However, you can use postman to register your own user and interact with server. 
 - client keep track of the room user is working on. Use `\room_join` to switch or join other room.
 - `\message [message]` will send message to the room that user is worknig on currently.
+- I used "github.com/gorilla/websocket" for implemnting client websocket. 
 
 # Testing
 
