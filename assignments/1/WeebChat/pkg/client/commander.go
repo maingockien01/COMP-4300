@@ -16,6 +16,8 @@ const (
 
 	COMMAND_MESSAGE_SEND = "\\message"
 
+	COMMAND_USER_IN = "\\user_in"
+
 	COMMAND_HELP = "\\help"
 )
 
@@ -36,6 +38,8 @@ func NewCommander() *Commander {
 	commander.Commands[COMMAND_ROOM_LEAVE] = CommandRoomLeave
 
 	commander.Commands[COMMAND_MESSAGE_SEND] = CommandMessageSend
+
+	commander.Commands[COMMAND_USER_IN] = CommandUserIn
 
 	commander.Commands[COMMAND_HELP] = Help
 
@@ -107,6 +111,24 @@ func CommandRoomJoin(commander *Commander, data string) {
 	}
 }
 
+func CommandUserIn(c *Commander, data string) {
+	users, err := c.ChatClient.GetUserList(data)
+
+	if err != nil {
+		fmt.Println("Error on geeting users in room ", err)
+		return
+	}
+
+	jsonText, err := json.MarshalIndent(users, "", "\t")
+
+	if err != nil {
+		fmt.Println("Error on geeting users in room ", err)
+		return
+	}
+
+	fmt.Println(string(jsonText))
+}
+
 func Help(c *Commander, data string) {
 	fmt.Println("Command list:")
 	fmt.Println("Use `\\room_list` to print out all chat rooms in server")
@@ -114,6 +136,7 @@ func Help(c *Commander, data string) {
 	fmt.Println("Use `\\room_create [roomName]` to create rooms in server")
 	fmt.Println("Use `\\room_leave [roomName]` to leave chat rooms in server")
 	fmt.Println("Use `\\message [message]` to send message to current chat room")
+	fmt.Println("Use `\\user_in [roomName]` to print the list of all users in the chat room")
 	fmt.Println("Use `\\help ` to print all commands")
 
 }

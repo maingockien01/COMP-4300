@@ -105,7 +105,3 @@ func (s *ChatServiceServer) HandlerRoom(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 }
-
-func (s *ChatServiceServer) HandlerRoomUser(w http.ResponseWriter, r *http.Request) {
-
-}
