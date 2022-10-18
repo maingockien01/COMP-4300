@@ -5,11 +5,11 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
-	"strings"
 )
 
 type ClientWebSocket struct {
@@ -20,9 +20,13 @@ type ClientWebSocket struct {
 }
 
 func NewClientWebSocket(url *url.URL, header http.Header) (*ClientWebSocket, error) {
-	address := getAddress(url)
+	address := "localhost:8010"
 
-	conn, err := net.Dial("TCP", address)
+	fmt.Println("Open websocket to ", address)
+
+	dialer := &net.Dialer{}
+
+	conn, err := dialer.Dial("tcp", address)
 
 	if err != nil {
 		return nil, err
@@ -40,11 +44,20 @@ func NewClientWebSocket(url *url.URL, header http.Header) (*ClientWebSocket, err
 		},
 	}
 
+	err = ws.Handshake()
+
+	if err != nil {
+		return nil, err
+	}
+
 	return ws, nil
 }
 
 func (ws *ClientWebSocket) Handshake() error {
 	url := ws.url
+
+	fmt.Println("Handshake with ", url)
+
 	req := &http.Request{
 		ProtoMajor: 1,
 		ProtoMinor: 1,
@@ -81,7 +94,7 @@ func (ws *ClientWebSocket) Handshake() error {
 		!headersContainsValue(res.Header, "Upgrade", "websocket") ||
 		!headersContainsValue(res.Header, "Connection", "upgrade") ||
 		res.Header.Get("Sec-Websocket-Accept") != getSecWebsocketAcceptHash(challengeKey) {
-		return errors.New("Bad handshake")
+		return errors.New("bad handshake")
 	}
 
 	return nil
@@ -95,20 +108,8 @@ func getChallengeKey() (string, error) {
 	return base64.StdEncoding.EncodeToString(p), nil
 }
 
-//TODO: test this
+// TODO: test this
 func getAddress(url *url.URL) string {
-	addr := url.Host
-	if i := strings.LastIndex(url.Host, ":"); i > strings.LastIndex(url.Host, "]") {
 
-	} else {
-		switch url.Scheme {
-		case "wss":
-			addr += ":443"
-		case "https":
-			addr += ":443"
-		default:
-			addr += ":80"
-		}
-	}
-	return addr
+	return url.String()
 }

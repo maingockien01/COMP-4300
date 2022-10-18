@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -17,7 +18,7 @@ func GetJson(url string, object any) error {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return errors.New("Status code is not success")
+		return errors.New("status code is not success")
 	}
 
 	json.NewDecoder(res.Body).Decode(object)
@@ -27,13 +28,7 @@ func GetJson(url string, object any) error {
 
 // Post
 func PostJson(url string, object []byte) ([]byte, error) {
-	body, err := json.Marshal(object)
-
-	if err != nil {
-		return nil, err
-	}
-
-	bodyReader := bytes.NewReader(body)
+	bodyReader := bytes.NewReader(object)
 
 	req, err := http.NewRequest(http.MethodPost, url, bodyReader)
 
@@ -49,8 +44,9 @@ func PostJson(url string, object []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	if res.StatusCode != http.StatusOK || res.StatusCode != http.StatusCreated || res.StatusCode != http.StatusNoContent {
-		return nil, errors.New("Status code is not success")
+	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusNoContent {
+		fmt.Println("Status ", res.StatusCode)
+		return nil, errors.New("status code is not success")
 	}
 
 	resBody, err := io.ReadAll(res.Body)

@@ -3,7 +3,6 @@ package server
 import (
 	"WeebChat/pkg/models"
 	"WeebChat/pkg/services/protocols"
-	"WeebChat/pkg/tcp"
 	"WeebChat/pkg/websocket"
 	"encoding/json"
 	"errors"
@@ -36,7 +35,7 @@ func NewChatServiceServer(host string, port string, service_name string) *ChatSe
 func (s *ChatServiceServer) Setup() error {
 
 	if s.Host == "" || s.Port == "" {
-		return tcp.MissingRequiredField{}
+		return errors.New("missing port and host")
 	}
 	server := &http.Server{
 		Addr:         s.Host + ":" + s.Port,
@@ -79,11 +78,6 @@ func (s *ChatServiceServer) Start() error {
 	return s.Server.ListenAndServe()
 }
 
-func (s *ChatServiceServer) PingDiscoveryService(discoveryService models.DiscoveryService) {
-	//Open connection to discovery service
-	//Register service with discovery service protocols
-}
-
 func (s *ChatServiceServer) Stop() {
 	//Stop listening for connections
 	//Close connections
@@ -97,18 +91,14 @@ func HandlerWrapper(handlerFrame func(websocket.Frame, *websocket.ServerWebSocke
 }
 
 func (s *ChatServiceServer) HandlerFrame(frame websocket.Frame, ws *websocket.ServerWebSocket) error {
-	fmt.Println("Handling frame...")
 	payload := frame.ParseText()
 	var protocolMetada protocols.Protocol
 	err := json.Unmarshal([]byte(payload), &protocolMetada)
-
-	fmt.Println(protocolMetada)
 
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("Handling ", protocolMetada.Metadata.Type, " ...")
 	switch protocolMetada.Metadata.Type {
 	case protocols.TYPE_MESSAGE:
 		return s.HandleMessage(payload, frame, ws)
@@ -118,14 +108,14 @@ func (s *ChatServiceServer) HandlerFrame(frame websocket.Frame, ws *websocket.Se
 		return s.HandleUser(payload, frame, ws)
 	default:
 		fmt.Println("Found no match type handler")
-		return errors.New("Errors on unexpected type handler")
+		return errors.New("errors on unexpected type handler")
 	}
 
 }
 
 func (s *ChatServiceServer) PushMessage(ws *websocket.ServerWebSocket, messages ...*models.Message) error {
 	if ws == nil {
-		return errors.New("There is no socket")
+		return errors.New("there is no socket")
 	}
 	protocolMessagePush := protocols.ProtocolMessage{
 		Metadata: protocols.ProtocolMetadata{
@@ -144,9 +134,6 @@ func (s *ChatServiceServer) PushMessage(ws *websocket.ServerWebSocket, messages 
 	}
 
 	frame := websocket.NewFrameMessage(jsonPayload)
-
-	fmt.Println("---")
-	fmt.Println(*frame)
 
 	err = ws.Send(*frame)
 

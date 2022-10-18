@@ -28,7 +28,6 @@ func (ws *ServerWebSocket) Handshake() error {
 		"", // required for extra CRLF
 		"", // required for extra CRLF
 	}
-	fmt.Println(strings.Join(headerLines, "\r\n"))
 
 	return ws.Write([]byte(strings.Join(headerLines, "\r\n")))
 }
@@ -79,8 +78,6 @@ func WebSocketHandler(w http.ResponseWriter, req *http.Request, frameHandler fun
 		log.Println("Error on init handshake: ", err)
 		return
 	}
-
-	fmt.Println("Done handshake")
 
 	for {
 		frame, err := ws.Receive()

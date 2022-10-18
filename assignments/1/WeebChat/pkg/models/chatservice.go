@@ -29,7 +29,7 @@ func (c *ChatService) CreateRoom(name string) error {
 	room := c.GetRoom(name)
 
 	if room != nil {
-		return errors.New("Duplicate room name")
+		return errors.New("duplicate room name")
 	}
 
 	newRoom := NewRoom(name)
@@ -71,10 +71,13 @@ func (c *ChatService) AddUser(user *User) error {
 
 			if u.Ws == nil {
 				if user.Ws == nil {
-					return errors.New("Duplicate user id")
+					return errors.New("duplicate user id")
 				}
 
 				// Update websocket conn
+			}
+
+			if user.Ws != nil {
 				fmt.Println("Update socket")
 				u.Ws = user.Ws
 			}

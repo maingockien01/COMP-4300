@@ -20,7 +20,6 @@ func (s *ChatServiceServer) HandleRoom(payload string, frame websocket.Frame, ws
 
 	switch protocolRoom.Metadata.Direction {
 	case protocols.DIRECTION_JOIN:
-		fmt.Println("User joining rooms...")
 		for i := 0; i < len(protocolRoom.Data); i++ {
 			r := &protocolRoom.Data[i]
 			err := s.ChatService.JoinUser(protocolRoom.Metadata.From, r.Name)
@@ -34,12 +33,11 @@ func (s *ChatServiceServer) HandleRoom(payload string, frame websocket.Frame, ws
 			roomInDatabase := s.ChatService.GetRoom(r.Name)
 
 			if roomInDatabase == nil {
-				return errors.New("There is no room")
+				return errors.New("there is no room")
 			}
 
 			messages := roomInDatabase.GetLatestMessages()
-			fmt.Println("Pushing messages ... ", messages)
-			fmt.Println(frame)
+
 			err = s.PushMessage(ws, messages...)
 
 			if err != nil {

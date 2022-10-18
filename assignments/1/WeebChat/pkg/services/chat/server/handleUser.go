@@ -21,7 +21,6 @@ func (s *ChatServiceServer) HandleUser(payload string, frame websocket.Frame, ws
 
 	switch protocolUser.Metadata.Direction {
 	case protocols.DIRECTION_GREETING:
-		fmt.Println("Adding user...")
 		protocolUser.Data.Ws = ws
 		return s.ChatService.AddUser(&protocolUser.Data)
 	}
@@ -95,6 +94,7 @@ func (s *ChatServiceServer) HandleGetUserIn(w http.ResponseWriter, r *http.Reque
 		err := json.NewDecoder(r.Body).Decode(&user)
 
 		if err != nil {
+			fmt.Println("Err on decoding ", err)
 			ReturnRestResponse(w, INTERNAL_ERROR, http.StatusInternalServerError)
 			return
 		}

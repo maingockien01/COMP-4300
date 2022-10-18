@@ -76,14 +76,14 @@ func (s *ChatServiceServer) HandleMessage(payload string, frame websocket.Frame,
 
 			if room == nil {
 				fmt.Println("Found no room - ", message.Room)
-				return errors.New("Found no room")
+				return errors.New("found no room")
 			}
 
 			user := s.ChatService.GetUser(message.Sender)
 
 			if user == nil {
 				fmt.Println("Found no user - ", message.Sender)
-				return errors.New("Found no user")
+				return errors.New("found no user")
 			}
 
 			returnMessages := room.GetMessages(message.Position, math.MaxInt)
@@ -98,21 +98,21 @@ func (s *ChatServiceServer) HandleMessage(payload string, frame websocket.Frame,
 
 			if room == nil {
 				fmt.Println("Found no room - ", message1.Room)
-				return errors.New("Found no room")
+				return errors.New("found no room")
 			}
 
 			user := s.ChatService.GetUser(message1.Sender)
 
 			if user == nil {
 				fmt.Println("Found no user - ", message1.Sender)
-				return errors.New("Found no user")
+				return errors.New("found no user")
 			}
 
 			returnMessages := room.GetMessages(message1.Position, message2.Position)
 
 			return s.PushMessage(user.Ws, returnMessages...)
 		default:
-			return errors.New("Invalid number of messages")
+			return errors.New("invalid number of messages")
 		}
 	case protocols.DIRECTION_UPDATE:
 		messages := protocolMessage.Data
@@ -128,14 +128,14 @@ func (s *ChatServiceServer) AddMessage(message *models.Message, roomName string)
 	room := s.ChatService.GetRoom(message.Room)
 	if room == nil {
 		fmt.Println("Found no room - ", message.Room)
-		return errors.New("Found no room")
+		return errors.New("found no room")
 	}
 
 	user := room.GetUser(message.Sender)
 
 	if user == nil {
 		fmt.Println("Found no user - ", message.Sender)
-		return errors.New("Found no user")
+		return errors.New("found no user")
 	}
 
 	message = room.AppendMessage(user, message)
@@ -144,7 +144,7 @@ func (s *ChatServiceServer) AddMessage(message *models.Message, roomName string)
 		return s.BroadcastMessage(message, room.Name)
 	}
 
-	return errors.New("Message is not appended")
+	return errors.New("message is not appended")
 }
 
 func (s *ChatServiceServer) BroadcastMessage(message *models.Message, roomName string) error {
@@ -152,7 +152,7 @@ func (s *ChatServiceServer) BroadcastMessage(message *models.Message, roomName s
 
 	if room == nil {
 		fmt.Println("Found no room - ", roomName)
-		return errors.New("Found no room")
+		return errors.New("found no room")
 	}
 
 	if message != nil {

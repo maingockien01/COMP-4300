@@ -3,23 +3,42 @@ package client
 import (
 	"WeebChat/pkg/models"
 	"WeebChat/pkg/services/protocols"
-	"WeebChat/pkg/websocket"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/url"
+	"time"
+
+	"github.com/gorilla/websocket"
 )
 
-type Client struct {
-	ClientUser *models.User
-	Rooms      []*models.Room
-	Ws         *websocket.ClientWebSocket
-	ChatUrl    string
+const PING_PERIOD = 50 * time.Second //secs
+
+const WRITE_WAIT = 10 * time.Second
+
+type ChatClient struct {
+	ChatClientUser  *models.User
+	Rooms           []*models.Room
+	Ws              *websocket.Conn
+	ChatUrl         string
+	CurrentRoomName *string
 }
 
-func (c *Client) RegisterUser(user *models.User) error {
+func NewChatClient(user *models.User, chat_server_url string) *ChatClient {
+	ChatClient := &ChatClient{
+		ChatClientUser: user,
+		Rooms:          make([]*models.Room, 0),
+		ChatUrl:        chat_server_url,
+		Ws:             nil,
+	}
+
+	return ChatClient
+}
+
+func (c *ChatClient) RegisterUser(user *models.User) error {
 	registerUrl := c.ChatUrl + "/user"
-	jsonBody, err := json.Marshal(c.ClientUser)
+	jsonBody, err := json.Marshal(c.ChatClientUser)
 
 	if err != nil {
 		return err
@@ -34,19 +53,24 @@ func (c *Client) RegisterUser(user *models.User) error {
 	return nil
 }
 
-func (c *Client) GetRoomList() []*models.Room {
+func (c *ChatClient) GetRoomList() []*models.Room {
 	var rooms []*models.Room
 
-	roomListUrl := c.ChatUrl + "/rooms"
+	roomListUrl := "http://" + c.ChatUrl + "/rooms"
 
-	GetJson(roomListUrl, &rooms)
+	err := GetJson(roomListUrl, &rooms)
+
+	if err != nil {
+		fmt.Println("Err on getting ", roomListUrl, ": ", err)
+		return nil
+	}
 
 	return rooms
 }
 
-func (c *Client) CreateRoom(roomName string, limit int) error {
-	url := c.ChatUrl + "/room"
-	room := models.Room{
+func (c *ChatClient) CreateRoom(roomName string, limit int) error {
+	url := "http://" + c.ChatUrl + "/room"
+	room := &models.Room{
 		Name: roomName,
 	}
 
@@ -65,10 +89,22 @@ func (c *Client) CreateRoom(roomName string, limit int) error {
 	return nil
 }
 
-func (c *Client) JoinRoom(roomName string) error {
-	url := c.ChatUrl + "/users/room/" + roomName
-	jsonBody, err := json.Marshal(c.ClientUser)
+func (c *ChatClient) JoinRoom(roomName string) error {
+	users, err := c.GetUserList(roomName)
 
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		if user.Id == c.ChatClientUser.Id {
+			c.CurrentRoomName = &roomName
+			return nil
+		}
+	}
+
+	url := "http://" + c.ChatUrl + "/users/room/" + roomName
+	jsonBody, err := json.Marshal(*c.ChatClientUser)
 	if err != nil {
 		return err
 	}
@@ -79,12 +115,24 @@ func (c *Client) JoinRoom(roomName string) error {
 		return err
 	}
 
+	c.CurrentRoomName = &roomName
+
 	return nil
 }
 
-func (c *Client) LeaveRoom(roomName string) error {
-	url := c.ChatUrl + "/users/room/" + roomName
-	jsonBody, err := json.Marshal(c.ClientUser)
+func (c *ChatClient) GetUserList(roomName string) ([]*models.User, error) {
+	var users []*models.User
+
+	url := "http://" + c.ChatUrl + "/users/room/" + roomName
+
+	err := GetJson(url, &users)
+
+	return users, err
+}
+
+func (c *ChatClient) LeaveRoom(roomName string) error {
+	url := "http://" + c.ChatUrl + "/users/room/" + roomName
+	jsonBody, err := json.Marshal(*c.ChatClientUser)
 
 	if err != nil {
 		return err
@@ -96,14 +144,18 @@ func (c *Client) LeaveRoom(roomName string) error {
 		return err
 	}
 
+	if *c.CurrentRoomName == roomName {
+		c.CurrentRoomName = nil
+	}
+
 	return nil
 }
 
-func (c *Client) SendMessageRest(roomName string, content string) error {
-	url := c.ChatUrl + "/messages/" + roomName
+func (c *ChatClient) SendMessageRest(roomName string, content string) error {
+	url := "http://" + c.ChatUrl + "/messages/" + roomName
 	message := models.Message{
 		Content: content,
-		Sender:  c.ClientUser.Name,
+		Sender:  c.ChatClientUser.Id,
 		Room:    roomName,
 	}
 
@@ -130,17 +182,17 @@ func (c *Client) SendMessageRest(roomName string, content string) error {
 	return c.AppendMessage(&returnMessage)
 }
 
-func (c *Client) PullMessageRest(roomName string, from int, to int) []*models.Message {
+func (c *ChatClient) PullMessageRest(roomName string, from int, to int) []*models.Message {
 	var messages []*models.Message
 
-	url := c.ChatUrl + "/messages/" + roomName
+	url := "http://" + c.ChatUrl + "/messages/" + roomName
 
 	GetJson(url, &messages)
 
 	return messages
 }
 
-func (c *Client) AppendMessage(message *models.Message) error {
+func (c *ChatClient) AppendMessage(message *models.Message) error {
 	room := c.GetRoom(message.Room)
 
 	if room == nil {
@@ -151,12 +203,12 @@ func (c *Client) AppendMessage(message *models.Message) error {
 		return errors.New("message already in room")
 	}
 
-	room.AppendMessage(c.ClientUser, message)
+	room.AppendMessage(c.ChatClientUser, message)
 
 	return nil
 }
 
-func (c *Client) GetRoom(roomName string) *models.Room {
+func (c *ChatClient) GetRoom(roomName string) *models.Room {
 	for _, room := range c.Rooms {
 		if room.Name == roomName {
 			return room
@@ -166,54 +218,47 @@ func (c *Client) GetRoom(roomName string) *models.Room {
 	return nil
 }
 
-func (c *Client) OpenChatSocket() error {
+func (c *ChatClient) OpenChatSocket() error {
 
-	url, err := url.Parse(c.ChatUrl + "/chat")
+	url, err := url.Parse("ws://" + c.ChatUrl + "/chat")
 
 	if err != nil {
 		return err
 	}
 
-	ws, err := websocket.NewClientWebSocket(url, nil)
-
+	ws, _, err := websocket.DefaultDialer.Dial(url.String(), nil)
 	if err != nil {
 		return err
 	}
 
 	c.Ws = ws
 
+	go c.setPing()
+
 	greetings := protocols.ProtocolUser{
 		Metadata: protocols.ProtocolMetadata{
-			From:      c.ClientUser.Name,
+			From:      c.ChatClientUser.Name,
 			Direction: protocols.DIRECTION_GREETING,
 			Type:      protocols.TYPE_USER,
 			Version:   protocols.V1,
 		},
-		Data: *c.ClientUser,
+		Data: *c.ChatClientUser,
 	}
 
-	jsonGreetingBody, err := json.Marshal(greetings)
-
-	if err != nil {
-		return err
-	}
-
-	greetingFrame := websocket.NewFrameMessage(jsonGreetingBody)
-
-	return ws.Send(*greetingFrame)
+	return ws.WriteJSON(greetings)
 }
 
-func (c *Client) SendMessageSocket(roomName string, content string) error {
+func (c *ChatClient) SendMessageSocket(roomName string, content string) error {
 	messages := make([]*models.Message, 0)
 	messages = append(messages, &models.Message{
 		Content: content,
-		Sender:  c.ClientUser.Name,
+		Sender:  c.ChatClientUser.Id,
 		Room:    roomName,
 	})
 
 	messageProtocol := protocols.ProtocolMessage{
 		Metadata: protocols.ProtocolMetadata{
-			From:      c.ClientUser.Name,
+			From:      c.ChatClientUser.Name,
 			Direction: protocols.DIRECTION_UPDATE,
 			Type:      protocols.TYPE_MESSAGE,
 			Version:   protocols.V1,
@@ -221,29 +266,13 @@ func (c *Client) SendMessageSocket(roomName string, content string) error {
 		Data: messages,
 	}
 
-	jsonMessageBody, err := json.Marshal(messageProtocol)
-
-	if err != nil {
-		return err
-	}
-
-	messageFrame := websocket.NewFrameMessage(jsonMessageBody)
-
-	return c.Ws.Send(*messageFrame)
+	return c.Ws.WriteJSON(messageProtocol)
 }
 
-func (c *Client) ReceiveMessageSocket(roomName string, handleMessage func(*models.Message)) error {
-	frame, err := c.Ws.Receive()
-
-	if err != nil {
-		return err
-	}
-
-	frameBody := frame.ParseText()
-
+func (c *ChatClient) ReceiveMessageSocket(handleMessage func(*models.Message)) error {
 	var messageProtocol protocols.ProtocolMessage
 
-	err = json.Unmarshal([]byte(frameBody), &messageProtocol)
+	err := c.Ws.ReadJSON(&messageProtocol)
 
 	if err != nil {
 		return err
@@ -256,15 +285,30 @@ func (c *Client) ReceiveMessageSocket(roomName string, handleMessage func(*model
 	return nil
 }
 
-func (c *Client) CloseChatSocket() error {
+func (c *ChatClient) CloseChatSocket() error {
 	return c.Ws.Close()
 }
 
-func (c *Client) handleNewMessage(message *models.Message) {
+func (c *ChatClient) handleNewMessage(message *models.Message) {
 	err := c.AppendMessage(message)
 
-	if err != nil {
-		fmt.Printf("[%s] %s: %s\n", message.Room, message.Sender, message.Content)
+	if err == nil {
+		fmt.Printf("\n[%s]\t%s: %s\n", message.Room, message.Sender, message.Content)
 		return
+	} else {
+		fmt.Println(err)
+	}
+}
+
+func (c *ChatClient) setPing() {
+	ticker := time.NewTicker(PING_PERIOD)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			if err := c.Ws.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(WRITE_WAIT)); err != nil {
+				log.Println("ping:", err)
+			}
+		}
 	}
 }
