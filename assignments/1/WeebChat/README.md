@@ -14,10 +14,25 @@
         - `websocket` package for websocket
 # Run
 
-## Chat Server
+## Running on aviary
+
+the host should be the host name of the server you are on.
+For example, if you are on `wren`, which is fully `wren.cs.umanitoba.ca` and you want to run the server. The server host should be `wren.cs.umanitoba.ca` and clients should connect with that server host and correct port.
+
+## Chat Server 
+
+### With env variable
+
 ```
 $ make buildChatService
 $ HOST=localhost PORT=8010 SERVER_NAME=chat1 bin/chatService
+```
+
+### With command line args
+```
+$ make buildChatServiceArgs   
+$ bin/chatServiceArgs [Host] [Port] [ServerName]
+# Example: bin/chatServiceArgs localhost 8010 server1
 ```
 
 ### With docker
@@ -27,10 +42,18 @@ $ docker build -f Dockerfile.server -t "discovery_service:Dockerfile.server" .
 $ docker run --publish 8010:8080 --network=host  server:Dockerfile.server 
 ```
 
-## Chat client
+## Chat client 
+### With env variable
 ```
 $ make buildChatClient
 $ CHAT_URL=127.0.0.1:8010 USER_ID=user_client_1 USER_NAME=Kevin_client_1 bin/chatClient
+```
+
+### With command line args
+```
+$ make buildChatClientArgs
+$ bin/chatClientArgs [UrlToServer] [UserId] [UserName] 
+# Example: bin/chatClientArgs localhost:8010 user_client_1 kevin_client_1  
 ```
 
 ## Notes
