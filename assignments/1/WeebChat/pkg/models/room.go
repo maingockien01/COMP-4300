@@ -10,7 +10,6 @@ import (
 type Room struct {
 	Messages []*Message `json:"-"`
 	Name     string     `json:"name"`
-	secret   *string    `json:"-"`
 	Users    []*User    `json:"-"`
 	Lock     sync.Mutex `json:"-"`
 	Capacity int        `json:"capacity"`
@@ -82,6 +81,16 @@ func (r *Room) AppendMessage(sender *User, message *Message) *Message {
 	sender.LastActiveAt = time.Now()
 
 	return message
+}
+
+func (r *Room) IsMessageIn(message *Message) bool {
+	for _, m := range r.Messages {
+		if m.Position == message.Position {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (r *Room) GetAllMessages() []*Message {

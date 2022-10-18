@@ -3,11 +3,12 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 )
 
-//Get
+// Get
 func GetJson(url string, object any) error {
 	res, err := http.Get(url)
 
@@ -15,12 +16,16 @@ func GetJson(url string, object any) error {
 		return err
 	}
 
+	if res.StatusCode != http.StatusOK {
+		return errors.New("Status code is not success")
+	}
+
 	json.NewDecoder(res.Body).Decode(object)
 
 	return nil
 }
 
-//Post
+// Post
 func PostJson(url string, object []byte) ([]byte, error) {
 	body, err := json.Marshal(object)
 
@@ -44,6 +49,10 @@ func PostJson(url string, object []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	if res.StatusCode != http.StatusOK || res.StatusCode != http.StatusCreated || res.StatusCode != http.StatusNoContent {
+		return nil, errors.New("Status code is not success")
+	}
+
 	resBody, err := io.ReadAll(res.Body)
 	res.Body.Close()
 
@@ -55,9 +64,10 @@ func PostJson(url string, object []byte) ([]byte, error) {
 
 }
 
-//Delete
-func Delete(url string) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodDelete, url, nil)
+// Delete
+func DeleteJson(url string, jsonBody []byte) ([]byte, error) {
+	bodyReader := bytes.NewReader(jsonBody)
+	req, err := http.NewRequest(http.MethodDelete, url, bodyReader)
 
 	if err != nil {
 		return nil, err
