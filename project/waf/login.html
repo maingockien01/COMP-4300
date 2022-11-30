@@ -1,0 +1,79 @@
+<!-- UML Branded page top -->
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!-->
+<html lang="en" class="no-js"> <!--<![endif]--><head>
+<!-- UML branded page top -->
+<script src="//apps.lib.umanitoba.ca/public/js/templates/ngwe/page-top.js?v=1.1.1"></script>
+
+	<div class="container">
+    <!-- Begin: container -->
+    
+    	<div class="col-sm-4"></div>
+        
+        <div class="col-sm-4">
+    	<!-- Begin: col -->
+        
+        	<div class="well link_nav text-center" id="help"><a href="http://www.umanitoba.ca/libraries/services/logging_into_my_account.html" target="_blank">Need help?</a></div>
+            
+            <fieldset>
+            
+            	<legend id="login">Login</legend>
+                
+                <div class="dropdown">
+                    <button class="btn btn-default dropdown-toggle" 
+                            type="button" 
+                            id="menu1" 
+                            data-toggle="dropdown">Please select a login method <span class="caret"></span></button>
+                    <ul class="dropdown-menu" role="menu" aria-labelledby="menu1">
+                        <li role="presentation"><a role="menuitem" tabindex="-1" href="/login?auth=shibboleth&url=https://ieeexplore.ieee.org/stampPDF/getPDF.jsp?tp=&#38;arnumber=7035910&#38;ref=aHR0cHM6Ly9pZWVleHBsb3JlLmllZWUub3JnL2Fic3RyYWN0L2RvY3VtZW50LzcwMzU5MTA=">UMNet ID</a></li>
+                        <li role="presentation"><a role="menuitem" tabindex="-1" href="#" id="oc_form_14-digit">14-digit Library Card</a></li>
+                        <li role="presentation"><a role="menuitem" tabindex="-1" href="#" id="oc_form_usb">USB Courriel</a></li>
+                    </ul>
+                </div>
+                
+                <p>&nbsp;</p>
+            
+                <div id="oc_form">
+                <!-- Begin: oc_form -->
+                
+                	<form action="/login" method="post">
+                    <div class="form-group">
+                            <label for="user" id="username">Username:</label><br>
+                            <input type="text" class="form-control" id="user" name="user" />
+                        </div>
+                        <div class="form-group">
+                            <label for="pass" id="password">Password:</label><br>
+                            <input type="password" class="form-control" id="pass" name="pass" />
+                        </div>
+                        <input type="hidden" name="url" value="https://ieeexplore.ieee.org/stampPDF/getPDF.jsp?tp=&#38;arnumber=7035910&#38;ref=aHR0cHM6Ly9pZWVleHBsb3JlLmllZWUub3JnL2Fic3RyYWN0L2RvY3VtZW50LzcwMzU5MTA=" />
+                        <button type="submit" class="btn uom-btn">Login</button>
+                    </form>
+                    
+                    <br />
+                
+                    <p class="link_nav small"><a href="http://www.umanitoba.ca/libraries/services/conditions_of_access.html" target="_blank">* Conditions of Access</a></p>
+                
+                </div>
+            	<!-- End: oc_form -->
+            
+            </fieldset>
+        
+        </div>
+    	<!-- End: col -->
+        
+        <div class="col-sm-4"></div>
+        
+    </div>
+    <!-- End: container -->
+ 
+<!-- Chat widget (optional) -->
+<script src="//apps.lib.umanitoba.ca/chat/slide_out-v5/deploy/uml.js?v=1.5.9"></script>
+
+<!-- UML branded page bottom -->   
+<script src="//apps.lib.umanitoba.ca/public/js/templates/ngwe/page-bottom.js?v=1.1.1"></script>
+
+<!-- EZProxy JS -->   
+<script src="public/uml.js?v=1.1.1"></script>
